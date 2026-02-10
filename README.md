@@ -1,5 +1,6 @@
-# clinical-genomics-utils
-Some scripts that I have developed for simple tasks in genomics.
+## Clinical Genomics Utils
+This repository contains small, self-contained scripts and notebooks
+for educational and practical tasks in clinical genomics data analysis.
 
 ## License
 
