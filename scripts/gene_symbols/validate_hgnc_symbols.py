@@ -7,7 +7,7 @@ human gene symbols using the HGNC REST API.
 Source:
 - https://www.genenames.org/
 """
-
+import requests
 # =========================
 # Configuration / constants
 # =========================
