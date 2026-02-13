@@ -8,72 +8,105 @@ Source:
 - https://www.genenames.org/
 """
 import requests
-# =========================
-# Configuration / constants
-# =========================
+import sys
+import re
 HGNC_FETCH_SYMBOL_ENDPOINT = "https://rest.genenames.org/fetch/symbol/"
 HGNC_SEARCH_ENDPOINT = "https://rest.genenames.org/search/"
-DEFAULT_TIMEOUT = 10
 
+####FUNCTIONS
 
-# =========================
-# Public functions
-# =========================
-def merge_gene_lists(list_a: str, list_b: str, delimiter=", ") -> list[str]:
-    """
-    Merge two gene lists, remove duplicates, and sort alphabetically.
-    """
-    genes_a = {g.strip() for g in list_a.split(delimiter)}
-    genes_b = {g.strip() for g in list_b.split(delimiter)}
-    return sorted(genes_a.union(genes_b))
+def merge_gene_lists(*gene_lists):
+    def clean_gene(gen):
+        gen = gen.strip()
+        gen = gen.strip('.,;:!?_()[]{}"\'/\\')
+        return gen.upper()
+    all_genes=set()
+    for gene_list in gene_lists:
+      genes = set(cleaned for gen in re.split(r'[,;\s]+', gene_list) if (cleaned := clean_gene(gen)))
+      all_genes.update(genes)
 
+    return sorted(all_genes)
 
-def resolve_hgnc_symbol(symbol: str) -> dict:
-    """
-    Resolve a human gene symbol using HGNC.
+def validate_gene_list(gene_symbols):
+    approved_genes = []
+    renamed_genes = []
+    not_found_genes = []
 
-    Returns a dictionary with:
-    - status: approved | previous | alias | not_found | error
-    - approved_symbol: current HGNC symbol or None
-    """
     headers = {"Accept": "application/json"}
 
-    # 1) Strict check: approved symbol
-    fetch_response = requests.get(
-        HGNC_FETCH_SYMBOL_ENDPOINT + symbol,
-        headers=headers,
-        timeout=DEFAULT_TIMEOUT
-    )
+    for original_symbol in gene_symbols:
+        if not original_symbol or not original_symbol.strip():
+            continue
 
-    if fetch_response.status_code == 200:
-        data = fetch_response.json()
-        if data["response"]["numFound"] > 0:
-            return {"status": "approved", "approved_symbol": symbol}
+        symbol = original_symbol.strip().upper().replace(" ", "")
 
-    # 2) Fallback: previous symbols or aliases
-    search_response = requests.get(
-        HGNC_SEARCH_ENDPOINT + symbol,
-        headers=headers,
-        timeout=DEFAULT_TIMEOUT
-    )
+        fetch_url = HGNC_FETCH_SYMBOL_ENDPOINT + symbol
 
-    if search_response.status_code != 200:
-        return {"status": "error", "approved_symbol": None}
+        try:
+            fetch_response = requests.get(fetch_url, headers=headers, timeout=10)
 
-    docs = search_response.json()["response"]["docs"]
+            if fetch_response.status_code == 200:
+                fetch_data = fetch_response.json()
+                num_encontrados = fetch_data["response"]["numFound"]
 
-    for doc in docs:
-        if symbol in doc.get("prev_symbol", []):
-            return {"status": "previous", "approved_symbol": doc["symbol"]}
-        if symbol in doc.get("alias_symbol", []):
-            return {"status": "alias", "approved_symbol": doc["symbol"]}
+                if num_encontrados > 0:
+                    approved_genes.append(symbol)
+                    continue
+        except:
+            pass
 
-    return {"status": "not_found", "approved_symbol": None}
+        search_url = HGNC_SEARCH_ENDPOINT + symbol
 
+        try:
+            search_response = requests.get(search_url, headers=headers, timeout=10)
 
-# =========================
-# Module test (optional)
-# =========================
-if __name__ == "__main__":
-    # Minimal sanity check, not a demo
-    print(resolve_hgnc_symbol("TP53"))
+            if search_response.status_code != 200:
+                not_found_genes.append(original_symbol.strip())
+                continue
+
+            search_data = search_response.json()
+            docs = search_data["response"]["docs"]
+
+            if not docs:
+                not_found_genes.append(original_symbol.strip())
+                continue
+
+            gene_found = False
+            current_symbol = docs[0].get("symbol")
+
+            if current_symbol:
+                detail_url = HGNC_FETCH_SYMBOL_ENDPOINT + current_symbol
+
+                try:
+                    detail_response = requests.get(detail_url, headers=headers, timeout=10)
+
+                    if detail_response.status_code == 200:
+                        detail_data = detail_response.json()
+                        detail_docs = detail_data["response"]["docs"]
+
+                        if detail_docs:
+                            detail_doc = detail_docs[0]
+
+                            prev_symbols = detail_doc.get("prev_symbol", [])
+                            if symbol in prev_symbols:
+                                approved_genes.append(current_symbol)
+                                renamed_genes.append([original_symbol.strip(), current_symbol])
+                                gene_found = True
+
+                            if not gene_found:
+                                alias_symbols = detail_doc.get("alias_symbol", [])
+                                if symbol in alias_symbols:
+                                    approved_genes.append(current_symbol)
+                                    renamed_genes.append([original_symbol.strip(), current_symbol])
+                                    gene_found = True
+
+                except:
+                    pass
+
+            if not gene_found:
+                not_found_genes.append(original_symbol.strip())
+
+        except:
+            not_found_genes.append(original_symbol.strip())
+
+    return approved_genes, renamed_genes, not_found_genes
