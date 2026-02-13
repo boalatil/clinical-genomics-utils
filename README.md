@@ -1,3 +1,9 @@
+  ____              _       _   _ _ 
+ | __ )  ___   __ _| | __ _| |_(_) |
+ |  _ \ / _ \ / _` | |/ _` | __| | |
+ | |_) | (_) | (_| | | (_| | |_| | |
+ |____/ \___/ \__,_|_|\__,_|\__|_|_|
+
 # Clinical Genomics Utils
 This repository contains small, self-contained scripts and notebooks for educational and practical tasks in clinical genomics data analysis, with a focus on **gene symbol handling**, **HGNC validation**, and **reproducible exploratory workflows**.
 
