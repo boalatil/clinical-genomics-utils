@@ -9,12 +9,6 @@ Source:
 """
 
 # =========================
-# Imports
-# =========================
-import requests
-
-
-# =========================
 # Configuration / constants
 # =========================
 HGNC_FETCH_SYMBOL_ENDPOINT = "https://rest.genenames.org/fetch/symbol/"
