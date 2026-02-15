@@ -14,13 +14,11 @@ This repository contains small, self-contained scripts and notebooks for educati
 ```text
 clinical-genomics-utils/
 ├── scripts/
+│   └── __init__.py
 │   └── gene_symbols/
 │       └── validate_hgnc_symbols.py
-│
-├── notebooks/
-│   └── gene_lists/
-│       └── a_gene_list_hgnc.ipynb
-│
+|       └── gene_lists.py
+|       └── __init__.py
 ├── README.md
 └── LICENSE
 
@@ -28,19 +26,10 @@ clinical-genomics-utils/
 ```
 scripts/
 ```
-Reusable Python code that implements core logic. Scripts are not notebook-specific and are meant to be imported by notebooks or other tools.
-```
-scripts/gene_symbols/validate_hgnc_symbols.py
-```
-merge gene lists, validate human gene symbols using the official HGNC REST API, detect deprecated symbols and aliases.
-```
-notebooks/
-```
-Jupyter notebooks intended for explanation, reproducible examples, exploratory and educational use.
-```
-notebooks/gene_lists/a_gene_list_hgnc.ipynb
-```
-Demonstrates how to merge gene lists and validate symbols by importing functions from the scripts/ module.
+Reusable Python code that implements core logic.
+Core functions are implemented in:
+
+`scripts/gene_symbols/validate_hgnc_symbols.py`
 
 ## HGNC validation
 
